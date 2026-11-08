@@ -98,6 +98,7 @@ void runApplication(void) {//--------------------------------------------------
     bool outS1, outS2, outS3;
     signed short potValue;
     unsigned int msgLen, msgType;
+    char text[40];
 
     // filtrace stop koderu S9 a zobrazeni na LED V10, V11
     s9a = runFilterTypeBool(&filterS9A, getCoderChannelA());
@@ -171,6 +172,18 @@ void runApplication(void) {//--------------------------------------------------
                 integerToBytes((signed short)outS1, &txMsg[1]);
                 integerToBytes((signed short)outS2, &txMsg[3]);
                 sendMessageUSB(txMsg, COM_GO);
+                break;
+            }
+            case CMD_SEND_TAB: // CMD(3) - potenciometr a LED V1, V2 do Table Terminalu
+            {
+                sprintf(text, "R1 = %d", potValue);
+                sendTableTerminalMessageUSB("1A", text);
+
+                sprintf(text, "LED V1 = %d", (int)outS1);
+                sendTableTerminalMessageUSB("1B", text);
+
+                sprintf(text, "LED V2 = %d", (int)outS2);
+                sendTableTerminalMessageUSB("1C", text);
                 break;
             }
             default:
