@@ -167,7 +167,7 @@ void runApplication(void) {//--------------------------------------------------
             }
             case CMD_SEND_LED: // CMD(2) - stav LED V1 a V2 do grafu
             {
-                txMsg[0] = 4; // 2 promenne po 2 B
+                txMsg[0] = 5; // delka zpravy: 1 + 2*2 B
                 integerToBytes((signed short)outS1, &txMsg[1]);
                 integerToBytes((signed short)outS2, &txMsg[3]);
                 sendMessageUSB(txMsg, COM_GO);
