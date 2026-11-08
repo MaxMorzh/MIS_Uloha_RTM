@@ -42,6 +42,9 @@
 #define MSG_MAX 17
 #define POT_MAX 2047
 #define POT_MIN -2047
+#define RTM_RX_INT_LEN 7
+// prikazy z Command Editoru v RTM
+enum {CMD_STOP = 0, CMD_SEND_POT = 1, CMD_SEND_LED = 2, CMD_SEND_TAB = 3};
 //--- New variable types ------------------------------------------------------
 
 //--- Global vars -------------------------------------------------------------
@@ -50,6 +53,8 @@ memoryTypeBool_t memS1, memS2, memS3;
 
 unsigned char txMsg[MSG_MAX];
 unsigned char rxMsg[MSG_MAX];
+
+signed short activeCmd = CMD_STOP;
 //--- External vars -----------------------------------------------------------
 
 //---- Functions --------------------------------------------------------------
@@ -76,6 +81,8 @@ void configApplication(void){//------------------------------------------------
         txMsg[i] = 0;
         rxMsg[i] = 0;
     }
+    
+    activeCmd = CMD_STOP;
 }// configApplication() END 
 
 //===>>>> Call it every 1ms <<<<===
@@ -84,7 +91,8 @@ void runApplication(void) {//--------------------------------------------------
     bool s9a, s9b;
     bool s1, s2, s3;
     bool outS1, outS2, outS3;
-    short potValue;
+    signed short potValue;
+    unsigned int msgLen, msgType;
 
     // filtrace stop koderu S9 a zobrazeni na LED V10, V11
     s9a = runFilterTypeBool(&filterS9A, getCoderChannelA());
@@ -116,6 +124,22 @@ void runApplication(void) {//--------------------------------------------------
     else if (potValue < POT_MIN)
     {
         potValue = POT_MIN;
+    }
+    
+    // prijem prikazu z RTM
+    if (getMessageUSB(rxMsg, COM_GO) == true)
+    {
+        msgLen = rxMsg[0] & RX_MESSAGE_LENGTH_MASK;
+        msgType = rxMsg[0] & RX_MESSAGE_TYPE_MASK;
+
+        // kontrola zda zprava prisla z Command Editoru
+        if (msgType == RX_FROM_COMMAND_EDITOR)
+        {
+            if (msgLen == RTM_RX_INT_LEN)
+            {
+                activeCmd = bytesToInteger(&rxMsg[1]); // rezim integer (7 B)
+            }
+        }
     }
 }// runApplication() END)
 
