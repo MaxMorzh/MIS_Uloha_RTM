@@ -45,6 +45,8 @@
 #define RTM_RX_INT_LEN 7
 // prikazy z Command Editoru v RTM
 enum {CMD_STOP = 0, CMD_SEND_POT = 1, CMD_SEND_LED = 2, CMD_SEND_TAB = 3};
+
+#define DELAY_MS 50
 //--- New variable types ------------------------------------------------------
 
 //--- Global vars -------------------------------------------------------------
@@ -55,6 +57,8 @@ unsigned char txMsg[MSG_MAX];
 unsigned char rxMsg[MSG_MAX];
 
 signed short activeCmd = CMD_STOP;
+
+int timer50ms = DELAY_MS;
 //--- External vars -----------------------------------------------------------
 
 //---- Functions --------------------------------------------------------------
@@ -83,6 +87,7 @@ void configApplication(void){//------------------------------------------------
     }
     
     activeCmd = CMD_STOP;
+    timer50ms = DELAY_MS;
 }// configApplication() END 
 
 //===>>>> Call it every 1ms <<<<===
@@ -141,6 +146,41 @@ void runApplication(void) {//--------------------------------------------------
             }
         }
     }
+    
+    // casovani odesilani zprav do RTM s periodou 50 ms
+    if (--timer50ms <= 0)
+    {
+        timer50ms = DELAY_MS;
+
+        switch (activeCmd)
+        {
+            case CMD_STOP: // CMD(0) - zastaveni vysilani
+            {
+                break;
+            }
+            case CMD_SEND_POT: // CMD(1) - potenciometr do grafu
+            {
+                txMsg[0] = 3; // delka zpravy: 1 + 2 B
+                integerToBytes(potValue, &txMsg[1]);
+                sendMessageUSB(txMsg, COM_GO);
+                break;
+            }
+            case CMD_SEND_LED: // CMD(2) - stav LED V1 a V2 do grafu
+            {
+                txMsg[0] = 4; // 2 promenne po 2 B
+                integerToBytes((signed short)outS1, &txMsg[1]);
+                integerToBytes((signed short)outS2, &txMsg[3]);
+                sendMessageUSB(txMsg, COM_GO);
+                break;
+            }
+            default:
+            {
+                activeCmd = CMD_STOP;
+                break;
+            }
+        }
+    }
+    
 }// runApplication() END)
 
 //--- applicationControl.c file END -------------------------------------------
