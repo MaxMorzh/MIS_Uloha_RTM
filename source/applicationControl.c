@@ -40,6 +40,8 @@
 //--- Constants ---------------------------------------------------------------
 #define DELAY_ms  500
 #define MSG_MAX 17
+#define POT_MAX 2047
+#define POT_MIN -2047
 //--- New variable types ------------------------------------------------------
 
 //--- Global vars -------------------------------------------------------------
@@ -82,6 +84,7 @@ void runApplication(void) {//--------------------------------------------------
     bool s9a, s9b;
     bool s1, s2, s3;
     bool outS1, outS2, outS3;
+    short potValue;
 
     // filtrace stop koderu S9 a zobrazeni na LED V10, V11
     s9a = runFilterTypeBool(&filterS9A, getCoderChannelA());
@@ -103,6 +106,17 @@ void runApplication(void) {//--------------------------------------------------
     s3 = runFilterTypeBool(&filterS3, getButtonS3());
     outS3 = runMemoryTypeBool(&memS3, s3);
     setLedV3(outS3);
+    
+    // cteni potenciometru a omezeni rozsahu na -2047 az 2047
+    potValue = getPotentiometerValue();
+    if (potValue > POT_MAX)
+    {
+        potValue = POT_MAX;
+    }
+    else if (potValue < POT_MIN)
+    {
+        potValue = POT_MIN;
+    }
 }// runApplication() END)
 
 //--- applicationControl.c file END -------------------------------------------
