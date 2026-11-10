@@ -14,4 +14,3 @@ void initMemoryTypeBool(memoryTypeBool_t *mem, bool initValue);
 bool runMemoryTypeBool(memoryTypeBool_t *mem, bool value);
 
 #endif
-

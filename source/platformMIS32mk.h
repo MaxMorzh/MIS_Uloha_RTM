@@ -138,4 +138,3 @@ void setTestPinIRCAasIrcOutput(void);
 
 #endif	/* PLATFORMMIS32MK_H */
 
-

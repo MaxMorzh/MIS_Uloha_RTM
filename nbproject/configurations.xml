@@ -4,9 +4,10 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <itemPath>source/configCPU32mk.h</itemPath>
       <itemPath>source/filterTypeBool.h</itemPath>
       <itemPath>source/memoryTypeBool.h</itemPath>
+      <itemPath>source/configCPU32mk.h</itemPath>
+      <itemPath>source/messengerMIS.h</itemPath>
       <itemPath>source/platformMIS32mk.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"

@@ -1,54 +1,35 @@
-
 /*
- * File:    applicationControl.c (For MIS)
+ * Project: platformMISintegerRTM.X
+ *          (Based on platformDEPintegerRTM.X)
+ * File:    applicationControl.c
  * j.z.
  *  
  * MPLABX.IDE v5.10, XC32 v3.00, HW: DEP-PIC32-MK
  * 
- * Created:  2024.06.16
- * Modified: 2024.08.12
+ * Created:  2024.06.18
+ * Modified: 2024.06.18
  * 
  */
-
-/*==== History trace buffer ===================================================
-
-2024.08.12-Replaced: #include "platformDEP32mk.h" by platformMIS32mk.h
-2024.08.09-Mldified: Source code cleaned up.
-2024.06.16-New: applicationControl.c TEMPLATE for students MIS 
--------------------------------------------------------------------------------
-
-2023.02.10-New: applicationControl.c TEMPLATE for students DEP 
-==== History trace buffer END ================================================*/
 
 //--- Includes ----------------------------------------------------------------
 #include <xc.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <sys/attribs.h>
 #include "platformMIS32mk.h"
+#include "messengerMIS.h"
 #include "filterTypeBool.h"
 #include "memoryTypeBool.h"
-#include "messengerMIS.h"
-
-//-- latform Function prototypes are in "platrformDEP32mk" ---------------------
-
-//--- User function prototypes -------------------------------------------------
-
-
-//--- Macros ------------------------------------------------------------------
-
 
 //--- Constants ---------------------------------------------------------------
-#define DELAY_ms  500
 #define MSG_MAX 17
+#define DELAY_MS 50
 #define POT_MAX 2047
 #define POT_MIN -2047
-#define RTM_RX_INT_LEN 7
-#define RTM_RX_FLT_LEN 13
+#define RTM_RX_INTEGER_MSG_LENGTH 7
+
 // prikazy z Command Editoru v RTM
 enum {CMD_STOP = 0, CMD_SEND_POT = 1, CMD_SEND_LED = 2, CMD_SEND_TAB = 3};
-
-#define DELAY_MS 50
-//--- New variable types ------------------------------------------------------
 
 //--- Global vars -------------------------------------------------------------
 filterTypeBool_t filterS1, filterS2, filterS3, filterS9A, filterS9B;
@@ -56,18 +37,13 @@ memoryTypeBool_t memS1, memS2, memS3;
 
 unsigned char txMsg[MSG_MAX];
 unsigned char rxMsg[MSG_MAX];
-
 signed short activeCmd = CMD_STOP;
-
 int timer50ms = DELAY_MS;
-
 int tabStep = 0;
-//--- External vars -----------------------------------------------------------
 
 //---- Functions --------------------------------------------------------------
 
-void configApplication(void){//------------------------------------------------
-  //--- User defined functions ---
+void configApplication(void) {//-----------------------------------------------
     int i;
 
     // inicializace filtru podle aktualniho stavu vstupu
@@ -82,16 +58,17 @@ void configApplication(void){//------------------------------------------------
     initMemoryTypeBool(&memS2, false);
     initMemoryTypeBool(&memS3, false);
 
-    // nulovani komunikacnich poli
+    // inicializace USB komunikace s RTM
+    initSendGetMessageUSB();
+    activeCmd = CMD_STOP;
+    timer50ms = DELAY_MS;
+    tabStep = 0;
+
     for (i = 0; i < MSG_MAX; i++)
     {
         txMsg[i] = 0;
         rxMsg[i] = 0;
     }
-    
-    activeCmd = CMD_STOP;
-    timer50ms = DELAY_MS;
-    tabStep = 0;
 }// configApplication() END 
 
 //===>>>> Call it every 1ms <<<<===
@@ -101,7 +78,7 @@ void runApplication(void) {//--------------------------------------------------
     bool s1, s2, s3;
     bool outS1, outS2, outS3;
     signed short potValue;
-    unsigned int msgLen, msgType;
+    unsigned char msgLen, msgType;
     char text[40];
 
     // filtrace stop koderu S9 a zobrazeni na LED V10, V11
@@ -124,7 +101,7 @@ void runApplication(void) {//--------------------------------------------------
     s3 = runFilterTypeBool(&filterS3, getButtonS3());
     outS3 = runMemoryTypeBool(&memS3, s3);
     setLedV3(outS3);
-    
+
     // cteni potenciometru a omezeni rozsahu na -2047 az 2047
     potValue = getPotentiometerValue();
     if (potValue > POT_MAX)
@@ -135,27 +112,19 @@ void runApplication(void) {//--------------------------------------------------
     {
         potValue = POT_MIN;
     }
-    
-    // prijem prikazu z RTM
+
+    // prijem prikazu z RTM (rezim Integer, delka 7 B)
     if (getMessageUSB(rxMsg, COM_GO) == true)
     {
-        msgLen = rxMsg[0] & RX_MESSAGE_LENGTH_MASK;
-        msgType = rxMsg[0] & RX_MESSAGE_TYPE_MASK;
+        msgLen = rxMsg[MSG_LEN_IX] & RX_MESSAGE_LENGTH_MASK;
+        msgType = rxMsg[MSG_LEN_IX] & RX_MESSAGE_TYPE_MASK;
 
-        // kontrola zda zprava prisla z Command Editoru
-        if (msgType == RX_FROM_COMMAND_EDITOR)
+        if ((msgType == RX_FROM__COMMAND_EDITOR) && (msgLen == RTM_RX_INTEGER_MSG_LENGTH))
         {
-            if (msgLen == RTM_RX_INT_LEN)
-            {
-                activeCmd = bytesToInteger(&rxMsg[1]); // rezim integer (7 B)
-            }
-            else if (msgLen == RTM_RX_FLT_LEN)
-            {
-                activeCmd = (signed short)bytesToFloat(&rxMsg[1]); // rezim float (13 B)
-            }
+            activeCmd = bytesToInteger(&rxMsg[1]);
         }
     }
-    
+
     // casovani odesilani zprav do RTM s periodou 50 ms
     if (--timer50ms <= 0)
     {
@@ -212,9 +181,4 @@ void runApplication(void) {//--------------------------------------------------
             }
         }
     }
-    
-}// runApplication() END)
-
-//--- applicationControl.c file END -------------------------------------------
-
-
+}// runApplication() END

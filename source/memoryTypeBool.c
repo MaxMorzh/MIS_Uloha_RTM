@@ -18,4 +18,3 @@ bool runMemoryTypeBool(memoryTypeBool_t *mem, bool value)
     mem->prevValue = value; // ulozeni stavu pro dalsi krok
     return mem->output;
 }
-

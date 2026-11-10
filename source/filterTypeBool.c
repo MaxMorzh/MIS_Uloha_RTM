@@ -1,96 +1,104 @@
 #include "filterTypeBool.h"
 
-// nastaveni vychoziho stavu podle vstupu po resetu
+// inicializace filtru podle pocatecni hodnoty vstupu
 void initFilterTypeBool(filterTypeBool_t *filter, bool initValue)
 {
     if (initValue == true)
     {
-        filter->state = s3;
+        filter->state = S3;
         filter->output = true;
     }
     else
     {
-        filter->state = s0;
+        filter->state = S0;
         filter->output = false;
     }
 }
 
-// filtrace zakmitu (volano kazdou 1 ms)
+// filtr zakmitu - zmena vystupu po 3 shodnych vzorcich
 bool runFilterTypeBool(filterTypeBool_t *filter, bool value)
 {
     switch (filter->state)
     {
-        case s0: // ustalena 0
+        case S0: // ustalena log. 0
         {
             filter->output = false;
             if (value == true)
             {
-                filter->state = s1; // prvni 1
-            }
-            break;
-        }
-        case s1:
-        {
-            if (value == true)
-            {
-                filter->state = s2; // druha 1 za sebou
+                filter->state = S1;
             }
             else
             {
-                filter->state = s0; // zakmit, zpet do s0
+                filter->state = S0;
             }
             break;
         }
-        case s2:
+        case S1: // 1x log. 1
         {
             if (value == true)
             {
-                filter->state = s3; // treti 1 -> prechod do ustalene 1
-                filter->output = true;
+                filter->state = S2;
             }
             else
             {
-                filter->state = s0; // zakmit, zpet do s0
+                filter->state = S0; // zakmit -> zpet do S0
             }
             break;
         }
-        case s3: // ustalena 1
+        case S2: // 2x log. 1
+        {
+            if (value == true)
+            {
+                filter->state = S3;
+                filter->output = true; // 3x log. 1 -> vystup 1
+            }
+            else
+            {
+                filter->state = S0; // zakmit -> zpet do S0
+            }
+            break;
+        }
+        case S3: // ustalena log. 1
         {
             filter->output = true;
             if (value == false)
             {
-                filter->state = s4; // prvni 0
-            }
-            break;
-        }
-        case s4:
-        {
-            if (value == false)
-            {
-                filter->state = s5; // druha 0 za sebou
+                filter->state = S4;
             }
             else
             {
-                filter->state = s3; // zakmit, zpet do s3
+                filter->state = S3;
             }
             break;
         }
-        case s5:
+        case S4: // 1x log. 0
         {
             if (value == false)
             {
-                filter->state = s0; // treti 0 -> prechod do ustalene 0
-                filter->output = false;
+                filter->state = S5;
             }
             else
             {
-                filter->state = s3; // zakmit, zpet do s3
+                filter->state = S3; // zakmit -> zpet do S3
+            }
+            break;
+        }
+        case S5: // 2x log. 0
+        {
+            if (value == false)
+            {
+                filter->state = S0;
+                filter->output = false; // 3x log. 0 -> vystup 0
+            }
+            else
+            {
+                filter->state = S3; // zakmit -> zpet do S3
             }
             break;
         }
         default:
         {
-            filter->state = s0;
+            filter->state = S0;
             filter->output = false;
             break;
         }
@@ -98,4 +106,3 @@ bool runFilterTypeBool(filterTypeBool_t *filter, bool value)
 
     return filter->output;
 }
-
