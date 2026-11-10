@@ -43,6 +43,7 @@
 #define POT_MAX 2047
 #define POT_MIN -2047
 #define RTM_RX_INT_LEN 7
+#define RTM_RX_FLT_LEN 13
 // prikazy z Command Editoru v RTM
 enum {CMD_STOP = 0, CMD_SEND_POT = 1, CMD_SEND_LED = 2, CMD_SEND_TAB = 3};
 
@@ -59,6 +60,8 @@ unsigned char rxMsg[MSG_MAX];
 signed short activeCmd = CMD_STOP;
 
 int timer50ms = DELAY_MS;
+
+int tabStep = 0;
 //--- External vars -----------------------------------------------------------
 
 //---- Functions --------------------------------------------------------------
@@ -88,6 +91,7 @@ void configApplication(void){//------------------------------------------------
     
     activeCmd = CMD_STOP;
     timer50ms = DELAY_MS;
+    tabStep = 0;
 }// configApplication() END 
 
 //===>>>> Call it every 1ms <<<<===
@@ -145,6 +149,10 @@ void runApplication(void) {//--------------------------------------------------
             {
                 activeCmd = bytesToInteger(&rxMsg[1]); // rezim integer (7 B)
             }
+            else if (msgLen == RTM_RX_FLT_LEN)
+            {
+                activeCmd = (signed short)bytesToFloat(&rxMsg[1]); // rezim float (13 B)
+            }
         }
     }
     
@@ -176,14 +184,25 @@ void runApplication(void) {//--------------------------------------------------
             }
             case CMD_SEND_TAB: // CMD(3) - potenciometr a LED V1, V2 do Table Terminalu
             {
-                sprintf(text, "R1 = %d", potValue);
-                sendTableTerminalMessageUSB("1A", text);
-
-                sprintf(text, "LED V1 = %d", (int)outS1);
-                sendTableTerminalMessageUSB("1B", text);
-
-                sprintf(text, "LED V2 = %d", (int)outS2);
-                sendTableTerminalMessageUSB("1C", text);
+                // postupny zapis do bunek 1A, 1B, 1C (1 zprava za 50 ms)
+                if (tabStep == 0)
+                {
+                    sprintf(text, "R1 = %d", potValue);
+                    sendTableTerminalMessageUSB("1A", text);
+                    tabStep = 1;
+                }
+                else if (tabStep == 1)
+                {
+                    sprintf(text, "LED V1 = %d", (int)outS1);
+                    sendTableTerminalMessageUSB("1B", text);
+                    tabStep = 2;
+                }
+                else
+                {
+                    sprintf(text, "LED V2 = %d", (int)outS2);
+                    sendTableTerminalMessageUSB("1C", text);
+                    tabStep = 0;
+                }
                 break;
             }
             default:
